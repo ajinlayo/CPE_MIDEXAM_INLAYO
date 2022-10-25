@@ -1,0 +1,7 @@
+[centos]
+192.168.56.104 ansible_user=aaron
+
+[ubuntu]
+192.168.56.101 ansible_user=aaron
+
+

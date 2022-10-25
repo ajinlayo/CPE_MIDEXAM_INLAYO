@@ -1,0 +1,128 @@
+- name: Nagios Pre-requisite Installation
+  tags: dependecies, libraries
+  yum:
+    name:
+      - gd
+      - gd-devel
+      - openssl-devel
+      - gcc
+      - glibc
+      - glibc-common
+      - glibc-common
+      - autoconf
+      - wget
+      - openssl-devel
+      - net-snmp
+      - net-snmp-utils
+      - python2-pip
+      - gcc
+      - glibc
+      - perl
+      - httpd
+      - php
+      - wget
+      - glibc-common
+      - make
+      - gettext
+      - automake
+
+    state: latest
+
+- name: Passlib Installation
+  pip:
+    name: passlib
+
+- name: creating download directory
+  file:
+    path: ~/nagios
+    state: directory
+
+- name: Downloading Nagios and extracting
+  unarchive:
+    src: https://github.com/NagiosEnterprises/nagioscore/archive/nagios-4.4.6.tar.gz
+    dest: ~/nagios
+    remote_src: yes
+    mode: 0777
+    owner: root
+    group: root
+
+- name: configuring users and group
+  shell: |
+    cd ~/nagios/nagioscore-**
+    ./configure
+    make all
+    make install-groups-users
+    usermod -a -G nagios apache
+    make install
+    make install-daemoninit
+    make install-commandmode
+    make install-config
+    make install-webconf
+
+- name: Downloading Nagios plugins
+  unarchive:
+    src: https://github.com/nagios-plugins/nagios-plugins/archive/release-2.3.3.tar.gz
+    dest: ~/nagios
+    remote_src: yes
+    mode: 0777
+    owner: root
+    group: root
+
+- name: installation proper
+  shell: |
+    cd ~/nagios/nagios-plugins*
+    ./tools/setup
+    ./configure
+    make
+    make install
+
+- name: Configuring user and password for nagios
+  community.general.htpasswd:
+    path: /usr/local/nagios/etc/htpasswd.users
+    name: aaron
+    password: ubuntulinux
+
+- name: Rebooting nagios
+  service:
+    name: nagios
+    state: restarted
+    enabled: true
+
+- name: Rebooting httpd
+  service:
+    name: httpd
+    state: restarted
+    enabled: true
+- name: creating download directory
+  file:
+    path: ~/prometheus
+    state: directory
+
+- name: Downloading Prometheus and extracting
+  unarchive:
+    src: "{{source}}"
+    dest: ~/prometheus
+    remote_src: yes
+    mode: 0777
+    owner: root
+    group: root
+
+- name: Adding Prometheus exe
+  shell: |
+    cd ~/prometheus/prometheus*
+    cp -r . /usr/local/bin/prometheus
+
+- name: Copying Prometheus Service file
+  copy:
+    src: prometheus.service
+    dest: /etc/systemd/system
+    mode: 777
+    owner: root
+    group: root
+
+- name: Prometheus Verification
+  service:
+    name: prometheus
+    state: restarted
+    enabled: true
+
